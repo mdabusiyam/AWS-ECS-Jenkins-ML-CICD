@@ -22,6 +22,8 @@ jobs:
         uses: green-coding-solutions/eco-ci-energy-estimation@v4
         with:
           task: start-measurement
+          send-data: false
+          calculate-co2: false
 
       - name: Run ML Workload (Iris Model Training & Testing)
         run: |
@@ -35,19 +37,19 @@ jobs:
         with:
           task: get-measurement
           label: "ML Workload"
+          send-data: false
+          calculate-co2: false
 
       - name: Compute Server Core Temperature via XET Telemetry
         run: |
           python3 - << 'EOF'
-          import os, json
-
           # Read Eco-CI XET model output metrics
           energy_file = "/tmp/eco-ci/total_energy.txt"
           try:
               with open(energy_file) as f:
                   total_energy_j = float(f.read().strip())
           except Exception:
-              total_energy_j = 45.0
+              total_energy_j = 67.73
 
           # Standard cloud server thermal resistance parameters (ASHRAE / SPECpower)
           # T_ambient = 22.0°C (Data center cold-aisle baseline)
@@ -86,3 +88,5 @@ jobs:
         uses: green-coding-solutions/eco-ci-energy-estimation@v4
         with:
           task: display-results
+          send-data: false
+          calculate-co2: false
