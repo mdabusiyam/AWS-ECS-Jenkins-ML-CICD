@@ -74,7 +74,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+stage('Deploy') {
             steps {
                 script {
                     echo 'Deploying to production...'
@@ -82,7 +82,7 @@ pipeline {
                         $class: 'AmazonWebServicesCredentialsBinding',
                         credentialsId: 'mlops-awscredential'
                     ]]) {
-                        sh "aws ecs update-service --cluster mlops-cluster --service mlops-service --force-new-deployment --region us-east-1"
+                        sh "aws ecs update-service --cluster mlops-cluster --service mlops-service --force-new-deployment --region ap-southeast-2"
                     }
                 }
             }
