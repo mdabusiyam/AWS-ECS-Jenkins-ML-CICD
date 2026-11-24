@@ -3,21 +3,26 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIAL_ID = 'mlops-jenkins-dockerhub-token'
         DOCKERHUB_REGISTRY = 'https://registry.hub.docker.com'
-        DOCKERHUB_REPOSITORY = 'juianba/mlops-jenkins-01'
+        DOCKERHUB_REPOSITORY = 'mdabusiyam/mlops-iris-app'
     }
     stages {
         stage('Clone Repository') {
             steps {
-                // Clone Repository
                 script {
                     echo 'Cloning GitHub Repo...'
-                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'mlops-aws-ecs-cicd', url: 'https://github.com/shj37/AWS-ECS-Jenkins-ML-CICD.git']])
+                    checkout scmGit(
+                        branches: [[name: '*/main']],
+                        extensions: [],
+                        userRemoteConfigs: [[
+                            credentialsId: 'mlops-aws-ecs-cicd',
+                            url: 'https://github.com/mdabusiyam/AWS-ECS-Jenkins-ML-CICD.git'
+                        ]]
+                    )
                 }
             }
         }
         stage('Lint Code') {
             steps {
-                // Lint code
                 script {
                     echo 'Linting Python Code...'
                     sh "python -m pip install --break-system-packages -r requirements.txt"
@@ -29,7 +34,6 @@ pipeline {
         }
         stage('Test Code') {
             steps {
-                // Pytest code
                 script {
                     echo 'Testing Python Code...'
                     sh "pytest tests/"
@@ -38,16 +42,14 @@ pipeline {
         }
         stage('Trivy FS Scan') {
             steps {
-                // Trivy Filesystem Scan
                 script {
-                    echo 'Scannning Filesystem with Trivy...'
-                    sh "trivy fs --format table -o trivy-fs-report.html"
+                    echo 'Scanning Filesystem with Trivy...'
+                    sh "trivy fs --format table -o trivy-fs-report.html ."
                 }
             }
         }
         stage('Build Docker Image') {
             steps {
-                // Build Docker Image
                 script {
                     echo 'Building Docker Image...'
                     dockerImage = docker.build("${DOCKERHUB_REPOSITORY}:latest") 
@@ -56,7 +58,6 @@ pipeline {
         }
         stage('Trivy Docker Image Scan') {
             steps {
-                // Trivy Docker Image Scan
                 script {
                     echo 'Scanning Docker Image with Trivy...'
                     sh "trivy image --format table -o trivy-image-report.html ${DOCKERHUB_REPOSITORY}:latest"
@@ -65,10 +66,9 @@ pipeline {
         }
         stage('Push Docker Image') {
             steps {
-                // Push Docker Image to DockerHub
                 script {
                     echo 'Pushing Docker Image to DockerHub...'
-                    docker.withRegistry("${DOCKERHUB_REGISTRY}", "${DOCKERHUB_CREDENTIAL_ID}"){
+                    docker.withRegistry("${DOCKERHUB_REGISTRY}", "${DOCKERHUB_CREDENTIAL_ID}") {
                         dockerImage.push('latest')
                     }
                 }
@@ -76,17 +76,16 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                // Deploy Image to Amazon ECS
                 script {
                     echo 'Deploying to production...'
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
                         credentialsId: 'mlops-awscredential'
                     ]]) {
-                        sh "aws ecs update-service --cluster mlops-jenkins-ecs-1 --service mlops-jenkins-01-task-definition-service-radwjwae --force-new-deployment --region us-east-2"
-                    }
+                        sh "aws ecs update-service --cluster mlops-cluster --service mlops-service --force-new-deployment --region us-east-1"
                     }
                 }
             }
         }
     }
+}
